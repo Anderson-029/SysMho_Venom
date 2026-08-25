@@ -1,0 +1,20 @@
+# Node (landing-app)
+node_modules/
+landing-app/node_modules/
+
+# PHP / env
+.env
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Codebase memory graph (local index artifact)
+.codebase-memory/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store

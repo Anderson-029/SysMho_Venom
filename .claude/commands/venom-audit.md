@@ -1,80 +1,65 @@
 # /venom-audit — Auditoría de seguridad del código
 
-Revisa el código del proyecto en busca de vulnerabilidades conocidas antes de cualquier deploy o commit importante.
+Revisa el motor Python en busca de vulnerabilidades o malas prácticas conocidas antes de cualquier commit importante.
 
 ## Instrucciones
 
 Ejecuta cada check y reporta con ✅ / ⚠️ / ❌:
 
-### 1. SQL Injection (CRÍTICO)
+### 1. Credenciales hardcodeadas
 ```bash
-# Buscar variables de usuario concatenadas directamente en SQL
-grep -rn "\$_POST\|\$_GET\|\$_REQUEST" backend/ api/ 2>/dev/null | grep -v "prepare\|bindParam\|execute"
-```
-- ✅ Sin resultados — usa prepared statements
-- ❌ Hay resultados — SQL injection presente
-
-### 2. Credenciales hardcodeadas
-```bash
-grep -rn "ander123\|password.*=.*['\"][^'\"]\|pass.*=.*['\"][^'\"]" backend/ api/ code/ 2>/dev/null | grep -v ".env\|getenv\|os.environ"
+grep -rn "ander123\|password.*=.*['\"][^'\"]\|pass.*=.*['\"][^'\"]" code/ 2>/dev/null | grep -v ".env\|getenv\|os.environ\|os.getenv"
 ```
 - ✅ Sin resultados
 - ❌ Credenciales expuestas en código
 
-### 3. innerHTML con datos sin sanitizar
+### 2. Subprocess bloqueante
 ```bash
-grep -rn "innerHTML.*\(data\.\|result\.\|row\.\|user\.\|item\." admin-panel/ auditor-panel/ viewer-panel/ 2>/dev/null
+grep -n "subprocess.run\|subprocess.call\|subprocess.Popen" code/*.py
 ```
-- ✅ Sin resultados (usa textContent)
-- ⚠️ Hay resultados — revisar si los datos son confiables
+- ✅ Sin resultados (todo vía `asyncio.create_subprocess_exec`)
+- ❌ Hay llamadas síncronas que bloquean el event loop
 
-### 4. eval() en JavaScript
+### 3. Cleanup en finally (ARP + iptables)
 ```bash
-grep -rn "\beval(" admin-panel/ auditor-panel/ viewer-panel/ landing/ 2>/dev/null
+grep -n "finally" code/venom_route.py code/arp_utils.py code/iptables_utils.py
 ```
-- ✅ Sin resultados
-- ❌ eval() presente — XSS potencial
-
-### 5. auth.php incluido en todas las páginas PHP
-```bash
-for f in admin-panel/*.php auditor-panel/*.php viewer-panel/*.php; do
-  [ -f "$f" ] || continue
-  grep -l "require.*auth.php" "$f" && echo "✅ $f" || echo "❌ $f — sin auth.php"
-done
-```
-
-### 6. require_role() antes de lógica sensible
-```bash
-grep -rn "require_role" admin-panel/ auditor-panel/ viewer-panel/ api/ 2>/dev/null
-```
-Verificar que aparece en cada archivo PHP que maneja datos.
-
-### 7. Secretos en variables de entorno (no hardcoded)
-```bash
-grep -rn "DB_PASS\|DB_USER\|getenv\|\\$_ENV" backend/config.php api/ 2>/dev/null
-```
-- ✅ Usa `getenv()` o `$_ENV`
-- ❌ Valores directos en código
-
-### 8. Motor Python — cleanup en finally
-```bash
-grep -n "finally" code/venom_route.py code/arp_utils.py
-```
-- ✅ Ambos archivos tienen bloque finally
+- ✅ Los tres archivos tienen bloque `finally`
 - ❌ Falta cleanup
+
+### 4. check_root() antes de operaciones privilegiadas
+```bash
+grep -n "check_root" code/venom_route.py
+```
+
+### 5. Threads con stop_event
+```bash
+grep -n "threading.Event\|stop_event" code/*.py
+```
+
+### 6. db_bridge — fallo silencioso si no hay BD
+```bash
+grep -n "except.*psycopg2\|except.*OperationalError" code/db_bridge.py
+```
+- ✅ Captura errores de conexión sin interrumpir el CLI
+- ❌ Sin manejo de errores de conexión
+
+### 7. Credenciales de BD vía entorno
+```bash
+grep -n "os.getenv\|os.environ" code/db_bridge.py
+```
 
 ## Reporte final
 ```
 VENOM SECURITY AUDIT
 ════════════════════════════════════
-SQL Injection:     ✅/❌
-Credenciales:      ✅/❌
-innerHTML XSS:     ✅/⚠️/❌
-eval() JS:         ✅/❌
-Auth en PHP:       ✅/❌ (N/N archivos)
-require_role():    ✅/❌
-Env variables:     ✅/❌
-Python cleanup:    ✅/❌
+Credenciales:       ✅/❌
+Subprocess async:   ✅/❌
+Cleanup finally:     ✅/❌
+check_root():       ✅/❌
+Threads stop_event: ✅/❌
+db_bridge fallback: ✅/❌
+Env variables:      ✅/❌
 ════════════════════════════════════
 RESULTADO: ✅ SEGURO / ⚠️ REVISAR / ❌ VULNERABILIDADES PRESENTES
 ```
