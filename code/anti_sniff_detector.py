@@ -21,7 +21,6 @@ import threading
 import netifaces
 from ui_utils import BOLD_GREEN, BOLD_RED, NC
 from scapy.all import ARP, Ether, sendp, sniff, conf
-import db_bridge
 
 LOG_DIR = "sniff_detection"
 LOG_FILE = f"{LOG_DIR}/log.txt"
@@ -79,8 +78,6 @@ def detectar_sniffers(interface):
         if sospechosos:
             print(f"\n{BOLD_GREEN}[!] ¡Sniffer detectado!{NC}")
             _guardar_log(sospechosos)
-            for ip, mac in sospechosos:
-                db_bridge.registrar_deteccion(ip, mac, severidad=4)
         else:
             if not ya_mostrado:
                 print(f"\n{BOLD_RED}[✓] No se detectaron sniffers en esta pasada.{NC}")

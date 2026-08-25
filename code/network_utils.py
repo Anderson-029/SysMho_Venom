@@ -21,7 +21,6 @@ import netifaces
 import hashlib
 import os
 from scapy.all import ARP, Ether, srp
-import db_bridge
 
 # Variables globales compartidas entre módulos
 interface = ""
@@ -92,8 +91,6 @@ def escaneo_red(rango_red):
         global ip_victima, ip_gateway
         ip_victima = dispositivos[idx_victima][0]
         ip_gateway = dispositivos[idx_gateway][0]
-
-        db_bridge.registrar_scan_hosts(dispositivos)
 
         print()
         print(f"{ui_utils.YELLOW}[*] Interfaz seleccionada: {interface}{ui_utils.NC}")

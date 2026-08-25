@@ -37,18 +37,6 @@ grep -n "check_root" code/venom_route.py
 grep -n "threading.Event\|stop_event" code/*.py
 ```
 
-### 6. db_bridge — fallo silencioso si no hay BD
-```bash
-grep -n "except.*psycopg2\|except.*OperationalError" code/db_bridge.py
-```
-- ✅ Captura errores de conexión sin interrumpir el CLI
-- ❌ Sin manejo de errores de conexión
-
-### 7. Credenciales de BD vía entorno
-```bash
-grep -n "os.getenv\|os.environ" code/db_bridge.py
-```
-
 ## Reporte final
 ```
 VENOM SECURITY AUDIT
@@ -58,8 +46,6 @@ Subprocess async:   ✅/❌
 Cleanup finally:     ✅/❌
 check_root():       ✅/❌
 Threads stop_event: ✅/❌
-db_bridge fallback: ✅/❌
-Env variables:      ✅/❌
 ════════════════════════════════════
 RESULTADO: ✅ SEGURO / ⚠️ REVISAR / ❌ VULNERABILIDADES PRESENTES
 ```

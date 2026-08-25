@@ -20,7 +20,6 @@ import datetime
 import threading
 import hashlib
 from scapy.all import sniff, wrpcap
-import db_bridge
 
 # Configuracion.
 
@@ -166,7 +165,6 @@ def detener_captura_sniffer():
 
 def guardar_resultados_finales():
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    stats = {}
 
     # Guardar por protocolo
     for protocolo, lista_paquetes in paquetes_por_protocolo.items():
@@ -175,22 +173,17 @@ def guardar_resultados_finales():
 
             pcap_path = os.path.join(base_path, f"{protocolo}_{timestamp}.pcap")
             wrpcap(pcap_path, lista_paquetes)
-            db_bridge.registrar_artefacto(pcap_path, 'pcap')
 
             txt_path = os.path.join(base_path, f"{protocolo}_{timestamp}.txt")
             with open(txt_path, "w") as f:
                 for pkt in lista_paquetes:
                     f.write(str(pkt.summary()) + "\n")
-            db_bridge.registrar_artefacto(txt_path, 'txt')
-
-            stats[protocolo] = len(lista_paquetes)
 
     # Guardar .pcap global
     global_pcap = None
     if todos_los_paquetes:
         global_pcap = os.path.join(UNIQUE_DIR, f"captura_total_{timestamp}.pcap")
         wrpcap(global_pcap, todos_los_paquetes)
-        db_bridge.registrar_artefacto(global_pcap, 'pcap')
 
     # Hash del pcap global
     if global_pcap and os.path.isfile(global_pcap):
@@ -201,9 +194,6 @@ def guardar_resultados_finales():
         hash_output_path = os.path.join(UNIQUE_DIR, "hash_captura_global.txt")
         with open(hash_output_path, "w") as f:
             f.write(sha256_hash.hexdigest())
-        db_bridge.registrar_artefacto(hash_output_path, 'sha256')
-
-    db_bridge.registrar_stats(stats)
 
 if __name__ == "__main__":
     iniciar_sniffing()

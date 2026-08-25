@@ -41,7 +41,6 @@ import ui_utils               # Estilos y colores para consola. Presentación li
 import sniffer_engine         # Motor de sniffing modular que captura tráfico clave para análisis profundo.
 import sniffer_utils          # Herramientas extra para registrar DNS y generar hashes de integridad.
 import anti_sniff_detector    # Detector pasivo de sniffers en la red (interfaces en modo promiscuo).
-import db_bridge              # Persistencia de sesión en PostgreSQL (falla silenciosa si BD no disponible).
 
 
 
@@ -117,7 +116,6 @@ def signal_handler(sig, frame):
         print(f"[*] Esperando que el hilo del sniffer finalice...")
         sniffer_thread.join()
 
-    db_bridge.actualizar_sesion('terminada')
     print(f"{ui_utils.BOLD_GREEN}[✔] Ataque detenido y limpieza completada.{ui_utils.NC}")
     sys.exit(0)
 
@@ -199,21 +197,10 @@ def main():
     if activar_masquerade:
         iptables_utils.activar_masquerade_rule(interface)
 
-    # Registrar sesión en BD antes de iniciar el ataque
-    db_bridge.registrar_sesion(
-        victim=ip_victima,
-        gateway=ip_gateway,
-        iface=interface,
-        forward=activar_forward_rule,
-        masquerade=activar_masquerade,
-        antisniff=activar_antinsniff,
-    )
-
     if ui_utils.preguntar("¿ENVENENAR TABLAS ARP DE LA VÍCTIMA Y LA GATEWAY?"):
         arp_utils.spoof_objetivo()
         arp_utils.spoof_gateway()
     else:
-        db_bridge.actualizar_sesion('fallida')
         print(f"{ui_utils.BOLD_RED}[-] Envenenamiento cancelado.{ui_utils.NC}")
         sys.exit(0)
     print()

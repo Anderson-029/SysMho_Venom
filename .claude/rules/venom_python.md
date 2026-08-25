@@ -1,10 +1,9 @@
 # Reglas — Motor Python SysMho Venom
 
 ## Estado: ESTABILIZADO
-El motor Python en `code/` está completo y funcional. Solo modificar si:
+El motor Python en `code/` está completo y funcional, 100% basado en archivos locales (sin BD). Solo modificar si:
 1. Hay un bug real confirmado
-2. Se implementa Fase 2 del PLAN.md (bridge con PostgreSQL)
-3. Se agrega un nuevo protocolo al sniffer
+2. Se agrega un nuevo protocolo al sniffer
 
 ---
 
@@ -12,15 +11,14 @@ El motor Python en `code/` está completo y funcional. Solo modificar si:
 
 | Módulo | Responsabilidad | Puede tocar |
 |--------|----------------|-------------|
-| `venom_route.py` | Orquestación CLI | Solo Fase 2 (db_bridge call) |
+| `venom_route.py` | Orquestación CLI | Solo bugs |
 | `arp_utils.py` | ARP spoofing/restauración | Solo bugs |
-| `sniffer_engine.py` | Captura de tráfico | Solo Fase 2 (db_bridge call) |
+| `sniffer_engine.py` | Captura de tráfico | Solo bugs |
 | `iptables_utils.py` | Reglas iptables | Solo bugs |
 | `network_utils.py` | Detección de red | Solo bugs |
-| `anti_sniff_detector.py` | Detección de sniffers | Solo Fase 2 (db_bridge call) |
+| `anti_sniff_detector.py` | Detección de sniffers | Solo bugs |
 | `sniffer_utils.py` | Hashing SHA-256, filtros | Solo bugs |
 | `ui_utils.py` | UI CLI, banners | Solo bugs |
-| `db_bridge.py` | **NUEVO Fase 2** — BD persistence | Crear en Fase 2 |
 
 ---
 
@@ -56,26 +54,6 @@ proc = await asyncio.create_subprocess_exec(
 ```
 Nunca `subprocess.run()` bloqueante.
 
-### db_bridge.py (Fase 2) — Patrón
-```python
-# db_bridge.py — única responsabilidad: persistencia
-import psycopg2
-import os
-
-def get_conn():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        dbname=os.getenv("DB_NAME", "VENOM"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASS")
-    )
-
-def registrar_sesion(victim, gateway, iface, flags): ...
-def registrar_artefacto(sesion_id, protocolo, ruta, sha256): ...
-def registrar_deteccion(sesion_id, ip, mac, severidad): ...
-def registrar_scan_hosts(sesion_id, hosts): ...
-```
-
 ---
 
 ## Validación Antes de Commit
@@ -95,4 +73,4 @@ python3 -m py_compile code/arp_utils.py
 - `sudo python3 code/venom_route.py` desde Claude (requiere red real)
 - `sudo iptables` desde Claude
 - `subprocess.run(["sudo", ...])` sin confirmación explícita del usuario
-- Cambiar la estructura de directorios de salida (`logs/`, `archivos_unicos/`, `sniff_detection/`) sin actualizar `DB.sql`
+- Cambiar la estructura de directorios de salida (`logs/`, `archivos_unicos/`, `sniff_detection/`) sin avisar al usuario — otras herramientas o scripts pueden depender de esas rutas

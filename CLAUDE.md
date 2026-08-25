@@ -2,7 +2,7 @@
 
 ## Qué es este proyecto
 
-**Venom-Route** es una herramienta CLI de auditoría de redes para entornos autorizados. Motor Python puro: ARP spoofing, sniffing de tráfico clasificado por protocolo, detección pasiva de sniffers y gestión de iptables, con persistencia opcional en PostgreSQL.
+**Venom-Route** es una herramienta CLI de auditoría de redes para entornos autorizados. Motor Python puro: ARP spoofing, sniffing de tráfico clasificado por protocolo, detección pasiva de sniffers y gestión de iptables. Toda la evidencia se guarda como archivos locales (pcap/txt/sha256) — **sin base de datos ni dependencias externas de persistencia**.
 
 Uso exclusivo en redes autorizadas. Requiere privilegios root.
 
@@ -13,7 +13,7 @@ Uso exclusivo en redes autorizadas. Requiere privilegios root.
 | Capa | Tecnología |
 |------|-----------|
 | Motor | Python 3.12 + Scapy + iptables |
-| Persistencia (opcional) | PostgreSQL vía `psycopg2` |
+| Persistencia | Archivos locales (pcap/txt/sha256) — sin BD |
 
 ---
 
@@ -30,15 +30,9 @@ SysMho_Venom/
 │   ├── anti_sniff_detector.py      # Detección pasiva de sniffers
 │   ├── sniffer_utils.py            # Hashing SHA-256, filtro DNS
 │   ├── ui_utils.py                 # Colores terminal, banner, spinners, check_root()
-│   ├── db_bridge.py                # Bridge opcional Python ↔ PostgreSQL (psycopg2)
 │   ├── logs/                       # Evidencia capturada (pcap/txt por protocolo)
 │   ├── archivos_unicos/            # Captura consolidada + hash global
 │   └── AGENTS.md
-├── SQL/                         # Schema PostgreSQL (solo si se usa persistencia)
-│   ├── DB.sql
-│   ├── funcion_auditoria_y_triggers.sql
-│   └── AGENTS.md
-├── .env                         # Credenciales de BD (no versionar valores reales)
 └── .claude/                     # Configuración Claude Code
 ```
 
@@ -60,30 +54,25 @@ sudo python3 code/venom_route.py -v 192.168.1.10 -g 192.168.1.1 -i eth0 -F -M -A
 # -A: activar anti-sniffer detector
 ```
 
-**Nunca ejecutar `venom_route.py` ni comandos de red reales desde un agente** — requiere red autorizada real y privilegios root. Los agentes deben limitarse a análisis estático (`ruff check`, `py_compile`, lectura de código).
+**Nunca ejecutar `venom_route.py` ni comandos de red reales desde un agente** — requiere red autorizada real y privilegios root. Los agentes deben limitarse a análisis estático (`ruff check`, verificación de sintaxis, lectura de código).
 
 ---
 
-## Base de Datos (opcional)
+## Evidencia Generada
 
-Si se usa persistencia, el schema vive en `SQL/DB.sql` (12 tablas) + triggers de auditoría en `SQL/funcion_auditoria_y_triggers.sql`. Conexión configurada vía `.env`:
+Cada sesión genera sus propios archivos, automáticamente:
+- `code/logs/<protocolo>/<PROTOCOLO>_<timestamp>.pcap` + `.txt` — captura por protocolo.
+- `code/archivos_unicos/captura_total_<timestamp>.pcap` — captura consolidada.
+- `code/archivos_unicos/hash_captura_global.txt` — SHA-256 del pcap global.
+- `code/sniff_detection/log.txt` — hallazgos del detector anti-sniffer.
 
-```ini
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=venom
-DB_USER=postgres
-DB_PASS=...
-```
-
-`db_bridge.py` debe fallar silenciosamente (o con advertencia simple) si la BD no está disponible — el CLI nunca debe depender de la base de datos para funcionar.
+Esto es el comportamiento esperado del motor, no algo que limpiar entre ejecuciones (salvo que se quiera liberar espacio manualmente).
 
 ---
 
 ## Convenciones de Código
 
 - Módulos en `code/` con responsabilidad única (ver tabla arriba).
-- Persistencia vía `db_bridge.py` usando `psycopg2`, opcional y no bloqueante.
 - Cleanup obligatorio en `finally` (restaurar ARP e iptables) al finalizar o ante error.
 - `check_root()` al inicio de cualquier operación que requiera privilegios.
 - Threads con `threading.Event` como señal de parada (ver `code/AGENTS.md`).
@@ -96,11 +85,10 @@ DB_PASS=...
 ## Seguridad Operacional
 
 - **Nunca ejecutar en redes no autorizadas.**
-- Credenciales de BD nunca en texto plano en el código — siempre vía `.env` / `os.getenv()`.
 - El motor requiere root — limitar acceso al binario/script.
 
 ---
 
 ## Estado Actual del Proyecto
 
-Proyecto reducido a su núcleo original: el motor CLI en `code/`. Toda la capa web (backend PHP, API REST, admin panel, landing) que se exploró en una sesión anterior fue eliminada — este repositorio es de nuevo exclusivamente la herramienta de línea de comandos.
+Proyecto reducido a su núcleo original: el motor CLI en `code/`, sin ninguna capa web ni de base de datos. Toda persistencia es vía archivos locales.
