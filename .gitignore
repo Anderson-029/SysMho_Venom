@@ -23,4 +23,4 @@ __pycache__/
 CLAUDE.md
 HANDOFF.md
 code/AGENTS.md
-.claude/rules/
+.claude
