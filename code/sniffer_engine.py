@@ -18,8 +18,11 @@
 import os
 import datetime
 import threading
-import hashlib
 from scapy.all import sniff, wrpcap
+import sniffer_utils
+import venom_logger
+
+log = venom_logger.get_logger()
 
 # Configuracion.
 
@@ -138,6 +141,7 @@ def _sniffer_loop(interfaz):
 def iniciar_captura_sniffer(interfaz):
     global hilo_sniffer
     crear_directorios_logs()
+    log.info("Sniffer iniciado en interfaz %s.", interfaz)
     print("[✓] Sniffer activado. Capturando tráfico...")
 
     hilo_sniffer = threading.Thread(target=_sniffer_loop, args=(interfaz,), daemon=True)
@@ -154,6 +158,7 @@ def iniciar_captura_sniffer(interfaz):
 # Función para detener el sniffer.
 
 def detener_captura_sniffer():
+    log.info("Deteniendo sniffer y guardando resultados finales.")
     detener_sniffer.set()
     guardar_resultados_finales()
 
@@ -187,13 +192,13 @@ def guardar_resultados_finales():
 
     # Hash del pcap global
     if global_pcap and os.path.isfile(global_pcap):
-        sha256_hash = hashlib.sha256()
-        with open(global_pcap, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(chunk)
         hash_output_path = os.path.join(UNIQUE_DIR, "hash_captura_global.txt")
-        with open(hash_output_path, "w") as f:
-            f.write(sha256_hash.hexdigest())
+        sniffer_utils.generar_hash_sha256(global_pcap, hash_output_path)
+
+    log.info(
+        "Evidencia guardada. paquetes_totales=%d pcap_global=%s",
+        len(todos_los_paquetes), global_pcap,
+    )
 
 if __name__ == "__main__":
     iniciar_sniffing()

@@ -19,6 +19,8 @@ El motor Python en `code/` está completo y funcional, 100% basado en archivos l
 | `anti_sniff_detector.py` | Detección de sniffers | Solo bugs |
 | `sniffer_utils.py` | Hashing SHA-256, filtros | Solo bugs |
 | `ui_utils.py` | UI CLI, banners | Solo bugs |
+| `venom_logger.py` | Log de funcionamiento interno (`logs/venom_engine.log`) | Solo bugs |
+| `limpiar_logs.py` | Limpieza de evidencia (mantenimiento) | Solo bugs |
 
 ---
 

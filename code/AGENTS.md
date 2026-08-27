@@ -18,6 +18,8 @@ Este directorio contiene el motor de auditoría de red. Cada módulo tiene respo
 | `anti_sniff_detector.py` | Detecta hosts en modo promiscuo enviando ARP falsos |
 | `sniffer_utils.py` | Hash SHA-256 de evidencias, filtro de dominios DNS |
 | `ui_utils.py` | Colores terminal, banner ASCII, spinners, check_root() |
+| `venom_logger.py` | Log de funcionamiento interno del motor (`logs/venom_engine.log`) |
+| `limpiar_logs.py` | Utilidad de mantenimiento: borra evidencia sin tocar la estructura de carpetas |
 
 ---
 

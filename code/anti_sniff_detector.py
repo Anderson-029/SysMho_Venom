@@ -16,11 +16,13 @@
 # =============================================================================
 import os
 import time
-import logging
 import threading
 import netifaces
 from ui_utils import BOLD_GREEN, BOLD_RED, NC
 from scapy.all import ARP, Ether, sendp, sniff, conf
+import venom_logger
+
+log = venom_logger.get_logger()
 
 LOG_DIR = "sniff_detection"
 LOG_FILE = f"{LOG_DIR}/log.txt"
@@ -76,6 +78,7 @@ def detectar_sniffers(interface):
 
 
         if sospechosos:
+            log.warning("Sniffer(s) detectado(s): %s", sospechosos)
             print(f"\n{BOLD_GREEN}[!] ¡Sniffer detectado!{NC}")
             _guardar_log(sospechosos)
         else:
@@ -101,6 +104,7 @@ def _guardar_log(lista):
 def iniciar_anti_sniffer(interface):
     def loop_deteccion():
         time.sleep(0.7)
+        log.info("Detector anti-sniffer iniciado en interfaz %s.", interface)
         print("[*] Iniciando escaneo antisniffer en segundo plano...")
         while True:
             detectar_sniffers(interface)

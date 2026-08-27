@@ -21,6 +21,9 @@ import netifaces
 import hashlib
 import os
 from scapy.all import ARP, Ether, srp
+import venom_logger
+
+log = venom_logger.get_logger()
 
 # Variables globales compartidas entre módulos
 interface = ""
@@ -40,13 +43,16 @@ def validar_conectividad(ip_victima, ip_gateway):
                 stderr=None
             )
             if resultado.returncode != 0:
+                log.error("Sin respuesta de %s (%s).", ip, etiqueta)
                 print(f"{ui_utils.BOLD_RED}[✘] No hay respuesta de {ip}.{ui_utils.NC}")
                 sys.exit(1)
             else:
+                log.info("Conectividad confirmada con %s (%s).", ip, etiqueta)
                 print()
                 print(f"{ui_utils.BOLD_GREEN}[✓] {ip} confirmando conectividad.{ui_utils.NC}")
                 print()
         except Exception as e:
+            log.exception("Error verificando conectividad con %s.", ip)
             print(f"{ui_utils.BOLD_RED}[✘] Error verificando {ip}: {e}{ui_utils.NC}")
             sys.exit(1)
 
@@ -77,6 +83,10 @@ def escaneo_red(rango_red):
                 dispositivos.append((ip, mac, vendor))
 
         if not dispositivos:
+            log.warning(
+                "Escaneo ARP sin resultados en %s (%s).",
+                rango_red, interface,
+            )
             print(f"{ui_utils.BOLD_RED}[✘] No se detectaron dispositivos. Verifica la interfaz y el rango.{ui_utils.NC}")
             sys.exit(1)
 
@@ -97,11 +107,17 @@ def escaneo_red(rango_red):
         print(f"{ui_utils.BOLD_GREEN}[✓] Víctima elegida: {ip_victima}{ui_utils.NC}")
         print(f"{ui_utils.BOLD_GREEN}[✓] Gateway elegido: {ip_gateway}{ui_utils.NC}")
         print()
+        log.info(
+            "Escaneo de red completado. victima=%s gateway=%s "
+            "interfaz=%s", ip_victima, ip_gateway, interface,
+        )
 
     except FileNotFoundError:
+        log.error("arp-scan no está instalado en el sistema.")
         print(f"{ui_utils.BOLD_RED}[✘] Error: arp-scan no está instalado. Instálalo con 'sudo apt install arp-scan'.{ui_utils.NC}")
         sys.exit(1)
     except Exception as e:
+        log.exception("Error durante el escaneo de red.")
         print(f"{ui_utils.BOLD_RED}[✘] Error durante escaneo: {e}{ui_utils.NC}")
         sys.exit(1)
 
@@ -149,4 +165,5 @@ def generar_hash_sha256(ruta_archivo):
             out.write(f"{sha256.hexdigest()}  {nombre}\n")
 
     except Exception as e:
+        log.exception("Error generando hash de %s.", ruta_archivo)
         print(f"[!] Error generando hash de {ruta_archivo}: {e}")

