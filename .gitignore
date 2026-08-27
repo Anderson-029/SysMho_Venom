@@ -18,3 +18,9 @@ __pycache__/
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Archivos de desarrollo local (no afectan uso de la herramienta)
+CLAUDE.md
+HANDOFF.md
+code/AGENTS.md
+.claude/rules/
