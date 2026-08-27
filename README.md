@@ -9,6 +9,12 @@
 
 ---
 
+## Banner del Sistema
+
+![VENOM-ROUTE Banner](img/venom-banner.png)
+
+---
+
 ## ¿Qué es Venom-Route?
 
 **Venom-Route** es una herramienta de auditoría diseñada para redes LAN autorizadas. Se posiciona lógicamente entre una víctima y su gateway mediante ARP spoofing, permitiendo:
@@ -21,14 +27,6 @@
 - ✅ Generar evidencia auditable para informes de seguridad
 
 **Toda la evidencia se guarda como archivos locales** — sin base de datos ni dependencias externas de persistencia.
-
----
-
-## Banner del Sistema
-
-![VENOM-ROUTE Banner](img/venom-banner.png)
-
----
 
 ## Requisitos Previos
 
