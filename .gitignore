@@ -24,3 +24,11 @@ CLAUDE.md
 HANDOFF.md
 code/AGENTS.md
 .claude
+
+# Evidencia de red capturada (nunca debe subirse al repo)
+code/logs/*/*.pcap
+code/logs/*/*.txt
+code/logs/venom_engine.log*
+code/archivos_unicos/*.pcap
+code/archivos_unicos/*.txt
+code/sniff_detection/log.txt
