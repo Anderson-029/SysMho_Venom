@@ -121,9 +121,6 @@ code/
 ## Documentación
 
 - **[MANUAL.md](MANUAL.md)** — Guía completa (18 secciones): cómo funciona, modos de ejecución, análisis de evidencia, troubleshooting
-- **[CLAUDE.md](CLAUDE.md)** — Instrucciones de desarrollo: 4 pilares obligatorios (coherencia, congruencia, estabilidad, funcionalidad), regla de oro
-- **[code/AGENTS.md](code/AGENTS.md)** — Responsabilidades de cada módulo
-- **[.claude/rules/venom_python.md](.claude/rules/venom_python.md)** — Estándares PEP8 y patrones del proyecto
 
 ---
 
@@ -205,15 +202,6 @@ tail -f code/logs/venom_engine.log
 
 ---
 
-## Validación y Calidad
-
-✅ **PEP8**: Línea máximo 79 caracteres  
-✅ **Coherencia**: Código nuevo sigue patrones existentes  
-✅ **Congruencia**: Documentación + código + comportamiento alineados  
-✅ **Estabilidad**: Ejecución end-to-end sin fallos, cleanup perfecto  
-✅ **Funcionalidad**: Captura real, logs precisos, evidencia auditable  
-
----
 
 ## Buenas Prácticas
 
@@ -237,22 +225,9 @@ El uso no autorizado de esta herramienta contra redes o sistemas de terceros es 
 
 ---
 
-## Estado del Proyecto
-
-- ✅ Motor CLI funcional (ARP spoofing, sniffing, logging)
-- ✅ Detección de sniffers operativa
-- ✅ Logging centralizado con rotación
-- ✅ Documentación completa (MANUAL.md, CLAUDE.md)
-- ✅ Validación end-to-end en red real
-- ✅ Todas las consignas de calidad confirmadas
-
----
-
 ## Autor
 
-**SysMho** — Proyecto de auditoría de redes para laboratorio educativo.
-
-Contacto: [anderson@...] (usar solo para redes autorizadas / educational purposes)
+**SysMho** 
 
 ---
 
