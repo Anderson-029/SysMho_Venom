@@ -24,6 +24,12 @@
 
 ---
 
+## Banner del Sistema
+
+![VENOM-ROUTE Banner](img/venom-banner.png)
+
+---
+
 ## Requisitos Previos
 
 ### Sistema
