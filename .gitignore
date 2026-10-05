@@ -19,12 +19,6 @@ __pycache__/
 .idea
 .DS_Store
 
-# Archivos de desarrollo local (no afectan uso de la herramienta)
-CLAUDE.md
-HANDOFF.md
-code/AGENTS.md
-.claude
-
 # Evidencia de red capturada (nunca debe subirse al repo)
 code/logs/*/*.pcap
 code/logs/*/*.txt
