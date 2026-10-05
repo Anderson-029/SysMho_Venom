@@ -9,7 +9,6 @@
 
 ---
 
-## Demo
 
 ![Demo de VENOM-ROUTE](img/venom-demo.gif)
 
