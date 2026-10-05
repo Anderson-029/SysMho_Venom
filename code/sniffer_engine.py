@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+# Copyright (C) 2026 SysMho
+#
+# Este archivo es parte de Venom-Route.
+# Venom-Route es software libre: puedes redistribuirlo y/o modificarlo bajo
+# los términos de la GNU General Public License v3 (o, a tu elección, una
+# versión posterior) publicada por la Free Software Foundation.
+# Se distribuye SIN NINGUNA GARANTÍA. Consulta la GNU GPL para más
+# detalles: <https://www.gnu.org/licenses/gpl-3.0.html>
+
+# ============================================================================
+# Módulo        : sniffer_engine.py                                   
+# Descripción   :   Motor de sniffing avanzado para VENOM-ROUTE.        
+#                   Captura tráfico clave en múltiples protocolos y     
+#                   lo clasifica para análisis de seguridad.            
+#                                                                      
+# Funcionalidad :
+#   - Sniffing de protocolos clave (DNS, HTTP, FTP, etc)
+#   - Filtrado inteligente y almacenamiento ordenado    
+#   - Guardado en .pcap y .txt para auditorías          
+#                                                                      
+# Nota legal     : Esta herramienta está diseñada para pruebas
+#                  controladas, fines educativos o auditorías
+#                  con consentimiento explícito.
+# =============================================================================
+
+import os
+import datetime
+import threading
+from scapy.all import sniff, wrpcap
+import sniffer_utils
+import venom_logger
+
+log = venom_logger.get_logger()
+
+# Configuracion.
+
+INTERFACE = "eth0"
+CAPTURE_DIR = "logs"
+UNIQUE_DIR = "archivos_unicos"
+CAPTURE_LIMIT = 0
+PROTOCOL_DIRS = {
+    "DNS": "dns",
+    "HTTP": "http",
+    "HTTPS": "https_sni",
+    "FTP": "ftp",
+    "SMTP": "smtp",
+    "TELNET": "telnet",
+    "IRC": "irc",
+    "SMB": "smb",
+    "ARP": "arp",
+    "ICMP": "icmp",
+    "TCP": "tcp",
+    "UDP": "udp"
+}
+todos_los_paquetes = []  
+paquetes_por_protocolo = {proto: [] for proto in PROTOCOL_DIRS}
+
+
+
+# Variables de control para ejecución en hilos ← MODIFICACIÓN
+detener_sniffer = threading.Event()
+hilo_sniffer = None
+
+# Crear las carpetas necesarias para cada protocolo.
+
+def crear_directorios_logs():
+    if not os.path.exists(CAPTURE_DIR):
+        os.makedirs(CAPTURE_DIR)
+
+    for carpeta in PROTOCOL_DIRS.values():
+        ruta = os.path.join(CAPTURE_DIR, carpeta)
+        if not os.path.exists(ruta):
+            os.makedirs(ruta)
+
+    # Crear carpeta para el pcap global y hash si no existe
+    if not os.path.exists(UNIQUE_DIR):
+        os.makedirs(UNIQUE_DIR)
+
+# Filtra los paquetes capturados.
+
+def guardar_paquete(pkt, nombre_proto):
+    # Guardar en la lista correspondiente en memoria
+    if nombre_proto in paquetes_por_protocolo:
+        paquetes_por_protocolo[nombre_proto].append(pkt)
+
+    # También agregamos al total global
+    todos_los_paquetes.append(pkt)
+
+
+# Funcion para detectar la clase de protocolo.
+
+def procesar_paquete(pkt):
+    if pkt.haslayer("DNS"):
+        guardar_paquete(pkt, "DNS")
+    elif pkt.haslayer("HTTP"):
+        guardar_paquete(pkt, "HTTP")
+    elif pkt.haslayer("TLS") and pkt.haslayer("IP"):
+        guardar_paquete(pkt, "HTTPS")  # Captura SNI si es visible
+    elif pkt.haslayer("FTP"):
+        guardar_paquete(pkt, "FTP")
+    elif pkt.haslayer("SMTP"):
+        guardar_paquete(pkt, "SMTP")
+    elif pkt.haslayer("Telnet"):
+        guardar_paquete(pkt, "TELNET")
+    elif pkt.haslayer("IRC"):
+        guardar_paquete(pkt, "IRC")
+    elif pkt.haslayer("NBNS") or pkt.haslayer("SMB"):
+        guardar_paquete(pkt, "SMB")
+    elif pkt.haslayer("ARP"):
+        guardar_paquete(pkt, "ARP")
+    elif pkt.haslayer("ICMP"):
+        guardar_paquete(pkt, "ICMP")
+    elif pkt.haslayer("TCP"):
+        guardar_paquete(pkt, "TCP")
+    elif pkt.haslayer("UDP"):
+        guardar_paquete(pkt, "UDP")
+
+# main para ejecución directa (modo prueba local)
+
+def iniciar_sniffing():
+    crear_directorios_logs()
+    print("[✓] Sniffer activado. Capturando tráfico...")
+
+    try:
+        sniff(
+            iface=INTERFACE,
+            prn=procesar_paquete,
+            store=False,
+            count=CAPTURE_LIMIT
+        )
+    except KeyboardInterrupt:
+        print("\n[✘] Sniffer detenido.")
+        guardar_resultados_finales()
+
+
+
+# Hilo que se ejecuta en segundo plano, verifica cada 5s si debe
+# detenerse
+
+def _sniffer_loop(interfaz):
+    while not detener_sniffer.is_set():
+        sniff(
+            iface=interfaz,
+            prn=procesar_paquete,
+            store=False,
+            timeout=5
+        )
+
+# Función que será invocada por venom_route.py para iniciar el sniffer
+def iniciar_captura_sniffer(interfaz):
+    global hilo_sniffer
+    crear_directorios_logs()
+    log.info("Sniffer iniciado en interfaz %s.", interfaz)
+    print("[✓] Sniffer activado. Capturando tráfico...")
+
+    hilo_sniffer = threading.Thread(
+        target=_sniffer_loop, args=(interfaz,), daemon=True
+    )
+    hilo_sniffer.start()
+
+    return hilo_sniffer
+
+# Función para detener el sniffer.
+
+def detener_captura_sniffer():
+    log.info("Deteniendo sniffer y guardando resultados finales.")
+    detener_sniffer.set()
+
+    # Esperar a que el hilo termine ANTES de guardar: el ciclo activo de
+    # sniff(timeout=5) sigue corriendo hasta 5s después del set() de
+    # arriba y puede seguir agregando paquetes a paquetes_por_protocolo /
+    # todos_los_paquetes. Guardar antes de este join() perdía en
+    # silencio ese último tramo de tráfico (nunca llegaba a ningún
+    # pcap/txt).
+    if hilo_sniffer:
+        hilo_sniffer.join()
+
+    guardar_resultados_finales()
+
+# funcion para guardar al finalizar la ejecución.
+
+def guardar_resultados_finales():
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Guardar por protocolo
+    for protocolo, lista_paquetes in paquetes_por_protocolo.items():
+        if lista_paquetes:
+            base_path = os.path.join(CAPTURE_DIR, PROTOCOL_DIRS[protocolo])
+
+            filename = f"{protocolo}_{timestamp}.pcap"
+            pcap_path = os.path.join(base_path, filename)
+            wrpcap(pcap_path, lista_paquetes)
+
+            txt_path = os.path.join(base_path, f"{protocolo}_{timestamp}.txt")
+            with open(txt_path, "w") as f:
+                for pkt in lista_paquetes:
+                    f.write(str(pkt.summary()) + "\n")
+
+    # Guardar .pcap global
+    global_pcap = None
+    if todos_los_paquetes:
+        filename_global = f"captura_total_{timestamp}.pcap"
+        global_pcap = os.path.join(UNIQUE_DIR, filename_global)
+        wrpcap(global_pcap, todos_los_paquetes)
+
+    # Hash del pcap global
+    if global_pcap and os.path.isfile(global_pcap):
+        hash_output_path = os.path.join(UNIQUE_DIR, "hash_captura_global.txt")
+        sniffer_utils.generar_hash_sha256(global_pcap, hash_output_path)
+
+    log.info(
+        "Evidencia guardada. paquetes_totales=%d pcap_global=%s",
+        len(todos_los_paquetes), global_pcap,
+    )
+
+if __name__ == "__main__":
+    iniciar_sniffing()

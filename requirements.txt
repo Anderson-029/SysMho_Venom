@@ -1,0 +1,13 @@
+# =============================================================================
+# Dependencias de runtime de Venom-Route (motor Python en code/)
+# Instalar con:  pip install -r requirements.txt
+#
+# Nota: arp-scan NO va aquí — es un paquete del sistema (apt), necesario solo
+# para el modo interactivo. Instálalo con:  sudo apt install arp-scan
+# =============================================================================
+
+# Captura y manipulación de paquetes (sniffer, ARP spoofing, anti-sniffer).
+scapy>=2.5.0
+
+# Detección de interfaces, IP y MAC locales (network_utils, anti_sniff_detector).
+netifaces>=0.11.0
